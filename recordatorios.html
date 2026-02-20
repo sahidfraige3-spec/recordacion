@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Recordatorios">
+<meta name="theme-color" content="#0a0e2a">
+<title>✨ Recordatorios</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Pacifico&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c22;
+    --card: rgba(255,255,255,0.06);
+    --card-border: rgba(150,200,255,0.15);
+    --accent: #7eb8f7;
+    --accent2: #b3d8ff;
+    --text: #e8f4ff;
+    --text-soft: rgba(200,230,255,0.65);
+    --star: rgba(180,220,255,0.8);
+    --danger: #ff6b8a;
+    --success: #6bdcc0;
+    --purple: #a78bfa;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ---- FONDO ESTRELLADO ---- */
+  #starfield {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .star {
+    position: absolute;
+    border-radius: 50%;
+    background: white;
+    animation: twinkle var(--dur) ease-in-out infinite;
+    opacity: 0;
+    filter: blur(var(--blur));
+  }
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0; transform: scale(0.8); }
+    50% { opacity: var(--op); transform: scale(1.2); }
+  }
+
+  .nebula {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(80px);
+    opacity: 0.18;
+  }
+  .nebula1 { width: 500px; height: 400px; background: radial-gradient(circle, #3b82f6, transparent); top: -100px; left: -100px; }
+  .nebula2 { width: 400px; height: 300px; background: radial-gradient(circle, #60a5fa, transparent); bottom: 0; right: -80px; opacity: 0.12; }
+  .nebula3 { width: 300px; height: 300px; background: radial-gradient(circle, #818cf8, transparent); top: 40%; left: 30%; opacity: 0.1; }
+
+  /* ---- LAYOUT ---- */
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 16px 120px;
+  }
+
+  /* ---- HEADER ---- */
+  .header {
+    text-align: center;
+    padding: 40px 0 24px;
+  }
+
+  .header h1 {
+    font-family: 'Pacifico', cursive;
+    font-size: 2rem;
+    background: linear-gradient(135deg, #b3d8ff, #7eb8f7, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    margin-bottom: 4px;
+  }
+
+  .header p {
+    color: var(--text-soft);
+    font-size: 0.85rem;
+  }
+
+  /* ---- BANNER IOS ---- */
+  .ios-banner {
+    background: linear-gradient(135deg, rgba(126,184,247,0.15), rgba(167,139,250,0.15));
+    border: 1px solid rgba(126,184,247,0.3);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 0.8rem;
+    color: var(--accent2);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.5;
+  }
+  .ios-banner .icon { font-size: 1.4rem; flex-shrink: 0; }
+
+  /* ---- NOTIF STATUS ---- */
+  .notif-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot.green { background: var(--success); box-shadow: 0 0 8px var(--success); }
+  .dot.red { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+  .dot.yellow { background: #fbbf24; box-shadow: 0 0 8px #fbbf24; }
+
+  .btn-enable {
+    margin-left: auto;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    padding: 6px 12px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* ---- SECCIÓN AÑADIR ---- */
+  .section-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .add-form {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(10px);
+  }
+
+  .field { margin-bottom: 14px; }
+
+  label {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--text-soft);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+
+  input[type="text"], input[type="time"], select {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(150,200,255,0.2);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--accent);
+    background: rgba(126,184,247,0.08);
+  }
+
+  select option { background: #0d1133; color: var(--text); }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .emoji-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .emoji-btn {
+    font-size: 1.4rem;
+    background: rgba(255,255,255,0.06);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    width: 44px; height: 44px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .emoji-btn.selected, .emoji-btn:hover {
+    border-color: var(--accent);
+    background: rgba(126,184,247,0.15);
+    transform: scale(1.1);
+  }
+
+  .btn-add {
+    width: 100%;
+    background: linear-gradient(135deg, #3b82f6, var(--purple));
+    border: none;
+    border-radius: 14px;
+    color: white;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    padding: 14px;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .btn-add:active { transform: scale(0.97); opacity: 0.9; }
+
+  /* ---- LISTA ---- */
+  .list { display: flex; flex-direction: column; gap: 12px; }
+
+  .item {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    animation: slideIn 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, var(--accent), var(--purple));
+    border-radius: 0 2px 2px 0;
+  }
+
+  .item.paused::before { background: linear-gradient(180deg, #fbbf24, #f97316); }
+  .item.paused { opacity: 0.7; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .item-emoji { font-size: 1.8rem; flex-shrink: 0; }
+
+  .item-info { flex: 1; min-width: 0; }
+  .item-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .item-detail {
+    color: var(--text-soft);
+    font-size: 0.75rem;
+    margin-top: 2px;
+  }
+  .item-next {
+    color: var(--accent);
+    font-size: 0.7rem;
+    margin-top: 2px;
+    font-weight: 600;
+  }
+
+  .item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  .btn-icon {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.9rem;
+    width: 34px; height: 34px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .btn-icon:hover { background: rgba(255,255,255,0.14); }
+  .btn-icon.danger:hover { background: rgba(255,107,138,0.2); color: var(--danger); }
+
+  .empty {
+    text-align: center;
+    color: var(--text-soft);
+    padding: 40px 20px;
+    font-size: 0.9rem;
+  }
+  .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+
+  /* ---- TOAST ---- */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg, #3b82f6, var(--purple));
+    color: white;
+    border-radius: 50px;
+    padding: 12px 24px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    z-index: 100;
+    animation: toastIn 0.3s ease;
+    white-space: nowrap;
+    box-shadow: 0 8px 30px rgba(59,130,246,0.4);
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  .toast.out { animation: toastOut 0.3s ease forwards; }
+  @keyframes toastOut {
+    to { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 0; }
+
+  /* ---- MODO FRECUENCIA CUSTOM ---- */
+  .custom-hours {
+    display: none;
+    margin-top: 10px;
+  }
+  .custom-hours.show { display: block; }
+
+  .hours-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    max-height: 160px;
+    overflow-y: auto;
+    padding: 4px 0;
+  }
+  .hr-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(150,200,255,0.15);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 6px 4px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .hr-btn.sel {
+    background: rgba(126,184,247,0.2);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<div id="starfield"></div>
+<div class="nebula nebula1"></div>
+<div class="nebula nebula2"></div>
+<div class="nebula nebula3"></div>
+
+<div class="app">
+  <div class="header">
+    <h1>✨ MisRecordatorios</h1>
+    <p>vitaminas · medicinas · tareas · trabajo</p>
+  </div>
+
+  <!-- Banner iOS -->
+  <div class="ios-banner" id="iosBanner" style="display:none">
+    <span class="icon">📱</span>
+    <span>Para recibir notificaciones en iPhone: toca el botón <strong>Compartir ↑</strong> y luego <strong>"Agregar a pantalla de inicio"</strong>. Después abre la app desde tu pantalla y activa las notificaciones.</span>
+  </div>
+
+  <!-- Estado notificaciones -->
+  <div class="notif-status" id="notifStatus">
+    <div class="dot yellow" id="statusDot"></div>
+    <span id="statusText">Verificando notificaciones...</span>
+    <button class="btn-enable" id="btnEnable" style="display:none">Activar</button>
+  </div>
+
+  <!-- Formulario -->
+  <div class="section-title">➕ Nuevo Recordatorio</div>
+  <div class="add-form">
+
+    <div class="field">
+      <label>Ícono</label>
+      <div class="emoji-row" id="emojiRow">
+        <button class="emoji-btn selected" data-emoji="💊">💊</button>
+        <button class="emoji-btn" data-emoji="🌿">🌿</button>
+        <button class="emoji-btn" data-emoji="💉">💉</button>
+        <button class="emoji-btn" data-emoji="🏃">🏃</button>
+        <button class="emoji-btn" data-emoji="💧">💧</button>
+        <button class="emoji-btn" data-emoji="🍎">🍎</button>
+        <button class="emoji-btn" data-emoji="📋">📋</button>
+        <button class="emoji-btn" data-emoji="⚡">⚡</button>
+        <button class="emoji-btn" data-emoji="🧘">🧘</button>
+        <button class="emoji-btn" data-emoji="🌙">🌙</button>
+        <button class="emoji-btn" data-emoji="☀️">☀️</button>
+        <button class="emoji-btn" data-emoji="🔔">🔔</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Nombre del recordatorio</label>
+      <input type="text" id="inputName" placeholder="ej. Vitamina C, Pastilla del corazón...">
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>Hora de inicio</label>
+        <input type="time" id="inputTime" value="07:00">
+      </div>
+      <div class="field">
+        <label>Frecuencia</label>
+        <select id="inputFreq">
+          <option value="once">Solo una vez</option>
+          <option value="daily" selected>Cada día</option>
+          <option value="12">Cada 12 horas</option>
+          <option value="8">Cada 8 horas</option>
+          <option value="6">Cada 6 horas</option>
+          <option value="4">Cada 4 horas</option>
+          <option value="3">Cada 3 horas</option>
+          <option value="2">Cada 2 horas</option>
+          <option value="1">Cada 1 hora</option>
+          <option value="custom">⚙️ Elegir horas...</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Custom hours grid -->
+    <div class="custom-hours" id="customHoursDiv">
+      <label>Cada cuántas horas (1–100):</label>
+      <div class="hours-grid" id="hoursGrid"></div>
+    </div>
+
+    <button class="btn-add" onclick="addReminder()">+ Agregar Recordatorio</button>
+  </div>
+
+  <!-- Lista -->
+  <div class="section-title">🔔 Mis Recordatorios</div>
+  <div class="list" id="reminderList"></div>
+</div>
+
+<script>
+// ==============================
+// ESTRELLAS
+// ==============================
+(function(){
+  const sf = document.getElementById('starfield');
+  const count = 120;
+  for(let i=0;i<count;i++){
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random()*2.5+0.5;
+    s.style.cssText = `
+      width:${size}px;height:${size}px;
+      left:${Math.random()*100}%;top:${Math.random()*100}%;
+      --dur:${2+Math.random()*4}s;
+      --blur:${Math.random()<0.3?'1px':'0px'};
+      --op:${0.4+Math.random()*0.6};
+      animation-delay:${Math.random()*5}s;
+    `;
+    sf.appendChild(s);
+  }
+})();
+
+// ==============================
+// ESTADO GLOBAL
+// ==============================
+let reminders = JSON.parse(localStorage.getItem('reminders_v2') || '[]');
+let selectedEmoji = '💊';
+let selectedCustomHours = null;
+let timers = {};
+
+// ==============================
+// DETECCIÓN iOS
+// ==============================
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const isStandalone = window.navigator.standalone === true;
+
+if(isIOS && !isStandalone){
+  document.getElementById('iosBanner').style.display = 'flex';
+}
+
+// ==============================
+// NOTIFICACIONES
+// ==============================
+function updateNotifStatus(){
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  const btn = document.getElementById('btnEnable');
+
+  if(!('Notification' in window)){
+    dot.className = 'dot red';
+    txt.textContent = 'Notificaciones no soportadas en este navegador';
+    btn.style.display = 'none';
+    return;
+  }
+
+  if(Notification.permission === 'granted'){
+    dot.className = 'dot green';
+    txt.textContent = '✅ Notificaciones activadas';
+    btn.style.display = 'none';
+  } else if(Notification.permission === 'denied'){
+    dot.className = 'dot red';
+    txt.textContent = 'Notificaciones bloqueadas — actívalas en Ajustes';
+    btn.style.display = 'none';
+  } else {
+    dot.className = 'dot yellow';
+    txt.textContent = 'Toca para activar notificaciones';
+    btn.style.display = 'inline-block';
+  }
+}
+
+document.getElementById('btnEnable').onclick = async function(){
+  const perm = await Notification.requestPermission();
+  updateNotifStatus();
+  if(perm === 'granted') showToast('✅ ¡Notificaciones activadas!');
+};
+
+updateNotifStatus();
+
+// ==============================
+// EMOJI SELECTOR
+// ==============================
+document.getElementById('emojiRow').addEventListener('click', e=>{
+  const btn = e.target.closest('.emoji-btn');
+  if(!btn) return;
+  document.querySelectorAll('.emoji-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedEmoji = btn.dataset.emoji;
+});
+
+// ==============================
+// GRID DE HORAS CUSTOM
+// ==============================
+(function buildGrid(){
+  const grid = document.getElementById('hoursGrid');
+  for(let i=1;i<=100;i++){
+    const b = document.createElement('button');
+    b.className = 'hr-btn';
+    b.textContent = i + 'h';
+    b.dataset.h = i;
+    b.onclick = function(){
+      document.querySelectorAll('.hr-btn').forEach(x=>x.classList.remove('sel'));
+      this.classList.add('sel');
+      selectedCustomHours = parseInt(this.dataset.h);
+    };
+    grid.appendChild(b);
+  }
+})();
+
+document.getElementById('inputFreq').onchange = function(){
+  const cd = document.getElementById('customHoursDiv');
+  if(this.value === 'custom'){
+    cd.classList.add('show');
+  } else {
+    cd.classList.remove('show');
+    selectedCustomHours = null;
+  }
+};
+
+// ==============================
+// AGREGAR RECORDATORIO
+// ==============================
+function addReminder(){
+  const name = document.getElementById('inputName').value.trim();
+  const time = document.getElementById('inputTime').value;
+  const freq = document.getElementById('inputFreq').value;
+
+  if(!name){ showToast('⚠️ Escribe un nombre'); return; }
+  if(!time){ showToast('⚠️ Elige una hora'); return; }
+  if(freq === 'custom' && !selectedCustomHours){ showToast('⚠️ Elige cuántas horas'); return; }
+
+  const hours = freq === 'custom' ? selectedCustomHours : freq;
+
+  const r = {
+    id: Date.now(),
+    emoji: selectedEmoji,
+    name,
+    time,
+    freq: hours, // 'once', 'daily', or number
+    active: true,
+    created: Date.now()
+  };
+
+  reminders.unshift(r);
+  save();
+  scheduleReminder(r);
+  renderList();
+  document.getElementById('inputName').value = '';
+  showToast('✅ ¡Recordatorio agregado!');
+}
+
+// ==============================
+// PROGRAMAR NOTIFICACIONES
+// ==============================
+function scheduleReminder(r){
+  if(!r.active) return;
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  clearReminder(r.id);
+
+  const [h, m] = r.time.split(':').map(Number);
+  const now = new Date();
+  let next = new Date();
+  next.setHours(h, m, 0, 0);
+  if(next <= now) next.setDate(next.getDate() + 1);
+
+  const delay = next - now;
+
+  function fire(){
+    const n = new Notification(r.emoji + ' ' + r.name, {
+      body: '¡Es hora! ' + r.name,
+      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">' + r.emoji + '</text></svg>',
+      badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle fill="%233b82f6" cx="50" cy="50" r="50"/></svg>',
+      vibrate: [200, 100, 200]
+    });
+
+    if(r.freq === 'once' || r.freq === 'daily' || r.freq === 'once'){
+      // nada especial
+    }
+
+    updateNextLabel(r.id);
+
+    if(r.freq !== 'once'){
+      const intervalMs = r.freq === 'daily'
+        ? 24 * 60 * 60 * 1000
+        : parseInt(r.freq) * 60 * 60 * 1000;
+
+      timers[r.id + '_interval'] = setInterval(()=>{
+        const rem = reminders.find(x=>x.id===r.id);
+        if(!rem || !rem.active){ clearReminder(r.id); return; }
+        new Notification(rem.emoji + ' ' + rem.name, {
+          body: '¡Es hora! ' + rem.name,
+          icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">' + rem.emoji + '</text></svg>',
+        });
+        updateNextLabel(rem.id);
+      }, intervalMs);
+    }
+  }
+
+  timers[r.id + '_timeout'] = setTimeout(fire, delay);
+}
+
+function clearReminder(id){
+  if(timers[id+'_timeout']) clearTimeout(timers[id+'_timeout']);
+  if(timers[id+'_interval']) clearInterval(timers[id+'_interval']);
+  delete timers[id+'_timeout'];
+  delete timers[id+'_interval'];
+}
+
+function getNextTime(r){
+  const [h,m] = r.time.split(':').map(Number);
+  const now = new Date();
+  let next = new Date();
+  next.setHours(h, m, 0, 0);
+  if(next <= now){
+    if(r.freq === 'daily' || r.freq === 'once'){
+      next.setDate(next.getDate()+1);
+    } else {
+      const ms = parseInt(r.freq)*60*60*1000;
+      while(next <= now) next = new Date(next.getTime() + ms);
+    }
+  }
+  return next;
+}
+
+function updateNextLabel(id){
+  const el = document.getElementById('next_'+id);
+  if(!el) return;
+  const r = reminders.find(x=>x.id===id);
+  if(!r) return;
+  const next = getNextTime(r);
+  const diff = next - new Date();
+  const hh = Math.floor(diff/3600000);
+  const mm = Math.floor((diff%3600000)/60000);
+  el.textContent = `⏰ Próxima: ${hh}h ${mm}m`;
+}
+
+// ==============================
+// RENDERIZAR LISTA
+// ==============================
+function freqLabel(freq){
+  if(freq === 'once') return 'Una vez';
+  if(freq === 'daily') return 'Cada día';
+  return `Cada ${freq}h`;
+}
+
+function renderList(){
+  const list = document.getElementById('reminderList');
+  if(!reminders.length){
+    list.innerHTML = '<div class="empty"><div class="empty-icon">🌙</div><p>Sin recordatorios aún.<br>¡Agrega uno arriba!</p></div>';
+    return;
+  }
+  list.innerHTML = reminders.map(r => `
+    <div class="item ${r.active?'':'paused'}" id="item_${r.id}">
+      <span class="item-emoji">${r.emoji}</span>
+      <div class="item-info">
+        <div class="item-name">${r.name}</div>
+        <div class="item-detail">🕐 ${r.time} · ${freqLabel(r.freq)}</div>
+        <div class="item-next" id="next_${r.id}"></div>
+      </div>
+      <div class="item-actions">
+        <button class="btn-icon" onclick="toggleReminder(${r.id})" title="${r.active?'Pausar':'Activar'}">${r.active?'⏸':'▶️'}</button>
+        <button class="btn-icon danger" onclick="deleteReminder(${r.id})" title="Eliminar">🗑</button>
+      </div>
+    </div>
+  `).join('');
+
+  reminders.forEach(r => {
+    if(r.active) updateNextLabel(r.id);
+    else {
+      const el = document.getElementById('next_'+r.id);
+      if(el) el.textContent = '⏸ Pausado';
+    }
+  });
+}
+
+// ==============================
+// TOGGLE / DELETE
+// ==============================
+function toggleReminder(id){
+  const r = reminders.find(x=>x.id===id);
+  if(!r) return;
+  r.active = !r.active;
+  if(r.active){ scheduleReminder(r); showToast('▶️ Activado'); }
+  else { clearReminder(id); showToast('⏸ Pausado'); }
+  save();
+  renderList();
+}
+
+function deleteReminder(id){
+  clearReminder(id);
+  reminders = reminders.filter(x=>x.id!==id);
+  save();
+  renderList();
+  showToast('🗑 Eliminado');
+}
+
+// ==============================
+// SAVE / LOAD
+// ==============================
+function save(){
+  localStorage.setItem('reminders_v2', JSON.stringify(reminders));
+}
+
+// ==============================
+// TOAST
+// ==============================
+let toastTimer;
+function showToast(msg){
+  let t = document.querySelector('.toast');
+  if(t) t.remove();
+  t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{
+    t.classList.add('out');
+    setTimeout(()=>t.remove(), 300);
+  }, 2500);
+}
+
+// ==============================
+// INIT
+// ==============================
+renderList();
+reminders.forEach(r=>{ if(r.active) scheduleReminder(r); });
+setInterval(()=> reminders.forEach(r=>{ if(r.active) updateNextLabel(r.id); }), 30000);
+</script>
+</body>
+</html>
